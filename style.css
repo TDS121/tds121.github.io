@@ -1,0 +1,19 @@
+body {
+  font-family: Arial, sans-serif;
+  max-width: 700px;
+  margin: 40px auto;
+}
+h1 {
+  font-size: 2.5rem;
+}
+a {
+  color: steelblue;
+}
+.bio {
+  background: #eee;
+  padding: 20px;
+}
+.bios {
+  background: rgb(89, 89, 236);
+  padding: 20px;
+}
