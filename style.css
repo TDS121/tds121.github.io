@@ -38,3 +38,22 @@ li {
   border-left: 5px solid rgb(89, 89, 236);
   border-radius: 4px;
 }
+footer {
+ margin-top: 40px;
+}
+.footer-writing {
+  color: white;
+}
+footer ul {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+footer li {
+  margin-bottom: 0;
+}
+@media (max-width: 500px) {
+  footer ul {
+    grid-template-columns: 1fr;
+  }
+}
