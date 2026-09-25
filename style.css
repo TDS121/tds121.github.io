@@ -38,3 +38,8 @@ li {
   border-left: 5px solid rgb(89, 89, 236);
   border-radius: 4px;
 }
+footer {
+  margin-top: 40px;
+  font-size: 0.9rem;
+  color: #666;
+}
