@@ -27,9 +27,15 @@
   }
 
   function setPressed(egg) {
-    if (egg.button) egg.button.setAttribute('aria-pressed', String(!!egg.active));
+    (egg.buttons || []).forEach(function (b) {
+      b.setAttribute('aria-pressed', String(!!egg.active));
+    });
     var anyActive = eggs.some(function (e) { return e.active; });
-    if (resetButton) resetButton.hidden = !anyActive;
+    resetButtons.forEach(function (b) { b.hidden = !anyActive; });
+    if (fabMain) {
+      fabMain.textContent = anyActive ? '🐣' : '🥚';   // 🐣 : 🥚
+      fabMain.classList.toggle('egg-fab-active', anyActive);
+    }
   }
 
   // Every egg toggles except where it defines its own trigger (colors).
@@ -77,34 +83,81 @@
     });
   });
 
-  var resetButton = null;
+  var resetButtons = [];
+  var fabMain = null;
+
+  function makeToggleButton(egg, label) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    b.title = egg.title + ' (or type "' + egg.word + '")';
+    b.setAttribute('aria-pressed', 'false');
+    b.addEventListener('click', function () {
+      // Reduced motion: buttons still work, but ask before starting anything.
+      if (reducedMotion.matches && !egg.active &&
+          !window.confirm('This starts an animated effect on the page. Continue?')) return;
+      trigger(egg);
+    });
+    egg.buttons = egg.buttons || [];
+    egg.buttons.push(b);
+    return b;
+  }
+
+  function makeResetButton(label) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    b.title = 'Turn off all easter eggs (or press Escape)';
+    b.hidden = true;
+    b.addEventListener('click', deactivateAll);
+    resetButtons.push(b);
+    return b;
+  }
+
   function buildControls() {
+    // Subtle text buttons in the footer.
     var bar = document.createElement('div');
     bar.className = 'egg-controls';
     bar.setAttribute('aria-label', 'Easter eggs');
-    eggs.forEach(function (egg) {
-      var b = document.createElement('button');
-      b.type = 'button';
-      b.textContent = egg.word;
-      b.title = egg.title + ' (or type "' + egg.word + '")';
-      b.setAttribute('aria-pressed', 'false');
-      b.addEventListener('click', function () {
-        // Reduced motion: buttons still work, but ask before starting anything.
-        if (reducedMotion.matches && !egg.active &&
-            !window.confirm('This starts an animated effect on the page. Continue?')) return;
-        trigger(egg);
-      });
-      egg.button = b;
-      bar.appendChild(b);
-    });
-    resetButton = document.createElement('button');
-    resetButton.type = 'button';
-    resetButton.textContent = 'reset';
-    resetButton.title = 'Turn off all easter eggs (or press Escape)';
-    resetButton.hidden = true;
-    resetButton.addEventListener('click', deactivateAll);
-    bar.appendChild(resetButton);
+    eggs.forEach(function (egg) { bar.appendChild(makeToggleButton(egg, egg.word)); });
+    bar.appendChild(makeResetButton('reset'));
     (document.querySelector('footer') || document.body).appendChild(bar);
+
+    // Floating egg button that opens a menu of the same toggles. Stays on
+    // screen while gravity has the page locked, and is easy to tap on a phone.
+    var fab = document.createElement('div');
+    fab.className = 'egg-fab';
+    var menu = document.createElement('div');
+    menu.className = 'egg-fab-menu';
+    menu.id = 'egg-fab-menu';
+    eggs.forEach(function (egg) { menu.appendChild(makeToggleButton(egg, egg.emoji + ' ' + egg.word)); });
+    menu.appendChild(makeResetButton('↩ reset'));
+
+    fabMain = document.createElement('button');
+    fabMain.type = 'button';
+    fabMain.className = 'egg-fab-main';
+    fabMain.textContent = '🥚';   // 🥚
+    fabMain.title = 'Easter eggs';
+    fabMain.setAttribute('aria-label', 'Easter eggs');
+    fabMain.setAttribute('aria-expanded', 'false');
+    fabMain.setAttribute('aria-controls', menu.id);
+    function setOpen(open) {
+      fab.classList.toggle('egg-fab-open', open);
+      fabMain.setAttribute('aria-expanded', String(open));
+    }
+    fabMain.addEventListener('click', function () {
+      setOpen(!fab.classList.contains('egg-fab-open'));
+    });
+    document.addEventListener('click', function (e) {
+      if (!fab.contains(e.target)) setOpen(false);
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') setOpen(false);
+    });
+
+    fab.appendChild(menu);
+    fab.appendChild(fabMain);
+    document.body.appendChild(fab);
   }
 
   /* ======================================================================
@@ -139,7 +192,7 @@
 
   function collectFallingElements() {
     return Array.prototype.filter.call(document.body.querySelectorAll(FALL_SELECTOR), function (el) {
-      if (el.closest('.egg-controls, .egg-gravity-overlay')) return false;
+      if (el.closest('.egg-controls, .egg-fab, .egg-gravity-overlay')) return false;
       if (el.classList.contains('egg-placeholder')) return false;
       if (el.parentElement && el.parentElement.closest(FALL_SELECTOR)) return false;
       var r = el.getBoundingClientRect();
@@ -149,6 +202,7 @@
 
   var gravity = {
     word: 'gravity',
+    emoji: '\uD83E\uDE90',   // 🪐
     title: 'Gravity mode',
     active: false,
     state: null,           // null | 'loading' | 'running' | 'restoring'
@@ -339,10 +393,24 @@
         item.el.style.transition = animate ? 'transform 0.7s cubic-bezier(0.25, 0.8, 0.25, 1)' : 'none';
         item.el.style.transform = 'translate(' + targets[i].left + 'px, ' + targets[i].top + 'px) rotate(0rad)';
       });
-      setTimeout(function () { self.finish(); }, animate ? 720 : 0);
+      if (!animate) { this.finish(); return; }
+
+      // Wait for every element's transition to actually end before cleaning
+      // up: Chromium re-adds an empty style="" if the attribute is removed
+      // while a transition on an inline property is still running.
+      var pending = this.items.length;
+      var fallback = setTimeout(function () { self.finish(); }, 1500);
+      this.items.forEach(function (item) {
+        item.el.addEventListener('transitionend', function done(e) {
+          if (e.target !== item.el) return;
+          item.el.removeEventListener('transitionend', done);
+          if (--pending === 0) { clearTimeout(fallback); self.finish(); }
+        });
+      });
     },
 
     finish: function () {
+      if (this.state !== 'restoring') return;
       var Matter = window.Matter;
       this.items.forEach(function (item) {
         restoreAttribute(item.el, 'class', item.className);
@@ -388,7 +456,7 @@
       acceptNode: function (node) {
         if (!/\S/.test(node.nodeValue)) return NodeFilter.FILTER_REJECT;
         var p = node.parentElement;
-        if (!p || p.closest('script, style, noscript, textarea, .egg-controls, .egg-placeholder')) {
+        if (!p || p.closest('script, style, noscript, textarea, .egg-controls, .egg-fab, .egg-placeholder')) {
           return NodeFilter.FILTER_REJECT;
         }
         return NodeFilter.FILTER_ACCEPT;
@@ -439,6 +507,7 @@
 
   var fish = {
     word: 'fish',
+    emoji: '\uD83D\uDC1F',   // 🐟
     title: 'Letter-eating fish',
     active: false,
     canvas: null,
@@ -761,6 +830,7 @@
 
   var colors = {
     word: 'colors',
+    emoji: '\uD83C\uDFA8',   // 🎨
     title: 'Random colors',
     active: false,
     palette: null,

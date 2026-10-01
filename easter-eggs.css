@@ -26,14 +26,97 @@
 .egg-controls button[aria-pressed="true"] {
   opacity: 0.85;
 }
-/* While gravity is running the page can't scroll, so keep the buttons
-   reachable (matters on phones, where there is no Escape key). */
+/* Keep the footer buttons clickable above the gravity drag overlay. */
 html.egg-gravity .egg-controls {
+  position: relative;
+  z-index: 9992;
+}
+
+/* --- floating egg button -------------------------------------------- */
+.egg-fab {
   position: fixed;
-  right: 12px;
-  bottom: 12px;
-  margin: 0;
+  right: 16px;
+  bottom: 16px;
   z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  font-family: Arial, sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.egg-fab-main {
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  background: linear-gradient(135deg, #ffd166, #ef476f);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  animation: egg-bob 3s ease-in-out infinite;
+  transition: transform 0.2s ease;
+}
+.egg-fab-main:hover,
+.egg-fab-main:focus-visible {
+  transform: scale(1.12) rotate(-10deg);
+}
+.egg-fab-main.egg-fab-active {
+  background: linear-gradient(135deg, #06d6a0, #118ab2);
+}
+.egg-fab-open .egg-fab-main {
+  transform: rotate(20deg);
+}
+.egg-fab-menu {
+  display: none;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 16px;
+  background: #fff;
+  color: #222;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  animation: egg-pop 0.2s ease-out;
+}
+.egg-fab-open .egg-fab-menu {
+  display: flex;
+}
+.egg-fab-menu button {
+  font: inherit;
+  font-size: 1rem;
+  text-align: left;
+  padding: 8px 14px;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: #f3f3f3;
+  color: inherit;
+  cursor: pointer;
+}
+.egg-fab-menu button:hover,
+.egg-fab-menu button:focus-visible {
+  border-color: #ef476f;
+}
+.egg-fab-menu button[aria-pressed="true"] {
+  background: #06d6a0;
+  color: #fff;
+}
+@keyframes egg-bob {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -5px; }
+}
+@keyframes egg-pop {
+  from { opacity: 0; transform: translateY(8px) scale(0.95); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .egg-fab-main,
+  .egg-fab-menu {
+    animation: none;
+  }
 }
 
 /* --- gravity -------------------------------------------------------- */
