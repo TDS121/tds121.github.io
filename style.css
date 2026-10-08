@@ -56,7 +56,8 @@ footer li {
   footer ul {
     grid-template-columns: 1fr;
   }
-}.site-nav {
+}
+.site-nav {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
