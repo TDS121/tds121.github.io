@@ -170,7 +170,8 @@ html.egg-colors a {
   color: var(--egg-link);
 }
 html.egg-colors .intro,
-html.egg-colors li {
+html.egg-colors li,
+html.egg-colors .site-nav a {
   background: var(--egg-surface);
   color: var(--egg-text);
   border-color: var(--egg-accent);

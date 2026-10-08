@@ -35,6 +35,7 @@
     if (fabMain) {
       fabMain.textContent = anyActive ? '🐣' : '🥚';   // 🐣 : 🥚
       fabMain.classList.toggle('egg-fab-active', anyActive);
+      fabMain.title = anyActive ? 'Turn off all easter eggs' : 'Easter eggs';
     }
   }
 
@@ -146,6 +147,13 @@
       fabMain.setAttribute('aria-expanded', String(open));
     }
     fabMain.addEventListener('click', function () {
+      // Hatched egg (something running): one click turns everything off.
+      // Plain egg: open or close the menu of effects.
+      if (eggs.some(function (e) { return e.active; })) {
+        deactivateAll();
+        setOpen(false);
+        return;
+      }
       setOpen(!fab.classList.contains('egg-fab-open'));
     });
     document.addEventListener('click', function (e) {
